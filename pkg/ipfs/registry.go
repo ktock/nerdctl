@@ -117,7 +117,7 @@ func (s *server) serveContentByCID(cidStr string) (r io.ReadSeekCloser, mediaTyp
 	if err != nil {
 		return nil, "", 0, err
 	}
-	rc, err := s.getReadSeekCloser(c)
+	rc, err := s.getFile(c)
 	if err != nil {
 		return nil, "", 0, err
 	}
@@ -141,42 +141,24 @@ func (s *server) serveContentByDigest(rootCIDStr, digestStr string) (r io.ReadSe
 	if err != nil {
 		return nil, "", 0, err
 	}
-	rc, err := s.getReadSeekCloser(targetCID)
+	rc, err := s.getFile(targetCID)
 	if err != nil {
 		return nil, "", 0, err
 	}
 	return rc, getMediaType(targetDesc), targetDesc.Size, nil
 }
 
-func (s *server) getReadSeekCloser(c cid.Cid) (io.ReadSeekCloser, error) {
-	r, closeFunc, err := s.getFile(c)
+func (s *server) getFile(c cid.Cid) (io.ReadSeekCloser, error) {
+	n, err := s.api.Unixfs().Get(context.Background(), ipath.IpfsPath(c)) // only IPFS CID is supported
 	if err != nil {
 		return nil, err
 	}
-	return newReadSeekCloser(r, closeFunc), nil
-}
-
-func (s *server) getFile(c cid.Cid) (*io.SectionReader, func() error, error) {
-	n, err := s.api.Unixfs().Get(context.Background(), ipath.IpfsPath(c)) // only IPFS CID is supported
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get file %q: %v", c.String(), err)
-	}
 	f := files.ToFile(n)
-	ra, ok := f.(interface {
-		io.ReaderAt
-	})
-	if !ok {
-		return nil, nil, fmt.Errorf("ReaderAt is not implemented")
-	}
-	size, err := f.Size()
-	if err != nil {
-		return nil, nil, err
-	}
-	return io.NewSectionReader(ra, 0, size), f.Close, nil
+	return f, nil
 }
 
 func (s *server) resolveCIDOfRootBlob(c cid.Cid) (cid.Cid, ocispec.Descriptor, error) {
-	rc, err := s.getReadSeekCloser(c)
+	rc, err := s.getFile(c)
 	if err != nil {
 		return cid.Cid{}, ocispec.Descriptor{}, err
 	}
@@ -200,16 +182,16 @@ func (s *server) resolveCIDOfDigest(dgst digest.Digest, desc ocispec.Descriptor)
 	if desc.Digest == dgst {
 		return c, desc, nil // hit
 	}
-	sr, closeFunc, err := s.getFile(c)
+	rsc, err := s.getFile(c)
 	if err != nil {
 		return cid.Cid{}, ocispec.Descriptor{}, err
 	}
-	descs, err := images.Children(context.Background(), &readerProvider{desc, sr}, desc)
+	descs, err := children(rsc, desc)
 	if err != nil {
-		closeFunc()
+		rsc.Close()
 		return cid.Cid{}, ocispec.Descriptor{}, err
 	}
-	if err := closeFunc(); err != nil {
+	if err := rsc.Close(); err != nil {
 		return cid.Cid{}, ocispec.Descriptor{}, err
 	}
 	var allErr error
@@ -249,7 +231,7 @@ func newReadSeekCloser(rs io.ReadSeeker, closeFunc func() error) io.ReadSeekClos
 		rs:        rs,
 		closeFunc: closeFunc,
 	}
-	rsc.curR = bufio.NewReaderSize(rsc.rs, 512*1024)
+	rsc.curR = bufio.NewReaderSize(rsc.rs, 1024*1024)
 	return rsc
 }
 
@@ -291,3 +273,31 @@ type contentReaderAt struct {
 }
 
 func (r *contentReaderAt) Close() error { return nil }
+
+func children(r io.Reader, desc ocispec.Descriptor) ([]ocispec.Descriptor, error) {
+	var descs []ocispec.Descriptor
+	switch desc.MediaType {
+	case images.MediaTypeDockerSchema2Manifest, ocispec.MediaTypeImageManifest:
+		var manifest ocispec.Manifest
+		if err := json.NewDecoder(r).Decode(&manifest); err != nil {
+			return nil, err
+		}
+
+		descs = append(descs, manifest.Config)
+		descs = append(descs, manifest.Layers...)
+	case images.MediaTypeDockerSchema2ManifestList, ocispec.MediaTypeImageIndex:
+		var index ocispec.Index
+		if err := json.NewDecoder(r).Decode(&index); err != nil {
+			return nil, err
+		}
+
+		descs = append(descs, index.Manifests...)
+	default:
+		if images.IsLayerType(desc.MediaType) || images.IsKnownConfig(desc.MediaType) {
+			// childless data types.
+			return nil, nil
+		}
+	}
+
+	return descs, nil
+}
