@@ -154,7 +154,7 @@ func (s *server) getFile(c cid.Cid) (io.ReadSeekCloser, error) {
 		return nil, err
 	}
 	f := files.ToFile(n)
-	return f, nil
+	return newReadSeekCloser(f), nil
 }
 
 func (s *server) resolveCIDOfRootBlob(c cid.Cid) (cid.Cid, ocispec.Descriptor, error) {
@@ -226,18 +226,16 @@ func getMediaType(desc ocispec.Descriptor) string {
 	return "application/octet-stream"
 }
 
-func newReadSeekCloser(rs io.ReadSeeker, closeFunc func() error) io.ReadSeekCloser {
+func newReadSeekCloser(r io.ReadSeekCloser) io.ReadSeekCloser {
 	rsc := &readSeekCloser{
-		rs:        rs,
-		closeFunc: closeFunc,
+		r: r,
 	}
-	rsc.curR = bufio.NewReaderSize(rsc.rs, 1024*1024)
+	rsc.curR = bufio.NewReaderSize(rsc.r, 1024*1024)
 	return rsc
 }
 
 type readSeekCloser struct {
-	rs        io.ReadSeeker
-	closeFunc func() error
+	r         io.ReadSeekCloser
 	curR      *bufio.Reader
 }
 
@@ -246,15 +244,15 @@ func (r *readSeekCloser) Read(p []byte) (int, error) {
 }
 
 func (r *readSeekCloser) Seek(offset int64, whence int) (int64, error) {
-	n, err := r.rs.Seek(offset, whence)
+	n, err := r.r.Seek(offset, whence)
 	if err != nil {
 		return 0, err
 	}
-	r.curR.Reset(r.rs)
+	r.curR.Reset(r.r)
 	return n, nil
 }
 
-func (r *readSeekCloser) Close() error { return r.closeFunc() }
+func (r *readSeekCloser) Close() error { return r.r.Close() }
 
 type readerProvider struct {
 	desc ocispec.Descriptor
