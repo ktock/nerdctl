@@ -15,6 +15,10 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 1
+    - name: run
+      run: |
+        sudo apt-get install nftables
+        sudo update-alternatives --set iptables /usr/sbin/iptables-nft
     - name: "Register QEMU (tonistiigi/binfmt)"
       run: docker run --privileged --rm tonistiigi/binfmt --install all
     - name: "Prepare (network driver=slirp4netns, port driver=slirp4netns)"
