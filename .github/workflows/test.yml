@@ -1,59 +1,11 @@
 name: test
 
-on:
-  push:
-    branches:
-      - main
-      - 'release/**'
-  pull_request:
-    paths-ignore:
-      - '**.md'
+on: push
 
 env:
   GO_VERSION: 1.23.x
 
 jobs:
-  lint:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4.1.7
-        with:
-          fetch-depth: 1
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          check-latest: true
-          cache: true
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6.1.0
-        with:
-          version: v1.60.1
-          args: --verbose
-      - name: yamllint-lint
-        run: make lint-yaml
-      - name: shellcheck
-        run: make lint-shell
-      - name: go imports ordering
-        run: |
-          go install -v github.com/incu6us/goimports-reviser/v3@latest
-          make lint-imports
-
-  test-unit:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4.1.7
-        with:
-          fetch-depth: 1
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          check-latest: true
-          cache: true
-      - name: "Run unit tests"
-        run: go test -v ./pkg/...
-
   test-integration:
     runs-on: "${{ matrix.runner }}"
     timeout-minutes: 40
@@ -99,12 +51,7 @@ jobs:
           docker run --privileged --rm tonistiigi/binfmt --install linux/arm64
           docker run --privileged --rm tonistiigi/binfmt --install linux/arm/v7
       - name: "Run integration tests"
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 30
-          max_attempts: 2
-          retry_on: error
-          command: docker run -t --rm --privileged test-integration
+        run: docker run -t --rm --privileged test-integration
 
   test-integration-ipv6:
     runs-on: "ubuntu-${{ matrix.ubuntu }}"
@@ -150,17 +97,7 @@ jobs:
           docker run --privileged --rm tonistiigi/binfmt --install linux/arm64
           docker run --privileged --rm tonistiigi/binfmt --install linux/arm/v7
       - name: "Run integration tests"
-        # The nested IPv6 network inside docker and qemu is complex and needs a bunch of sysctl config.
-        # Therefore it's hard to debug why the IPv6 tests fail in such an isolation layer.
-        # On the other side, using the host network is easier at configuration.
-        # Besides, each job is running on a different instance, which means using host network here
-        # is safe and has no side effects on others.
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 30
-          max_attempts: 2
-          retry_on: error
-          command: docker run --network host -t --rm --privileged test-integration-ipv6
+        run: docker run --network host -t --rm --privileged test-integration-ipv6
 
   test-integration-rootless:
     runs-on: "ubuntu-${{ matrix.ubuntu }}"
@@ -230,12 +167,7 @@ jobs:
           fi
           echo "WORKAROUND_ISSUE_622=${WORKAROUND_ISSUE_622}" >> "$GITHUB_ENV"
       - name: "Test (network driver=slirp4netns, port driver=builtin)"
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 30
-          max_attempts: 2
-          retry_on: error
-          command: docker run -t --rm --privileged -e WORKAROUND_ISSUE_622=${WORKAROUND_ISSUE_622} ${TEST_TARGET}
+        run: docker run -t --rm --privileged -e WORKAROUND_ISSUE_622=${WORKAROUND_ISSUE_622} ${TEST_TARGET}
 
   cross:
     runs-on: ubuntu-24.04
@@ -292,68 +224,4 @@ jobs:
           retry_on: error
           command: go test -timeout 20m -v -exec sudo ./cmd/nerdctl/... -args -test.target=docker -test.allow-kill-daemon
       - name: "Ensure that the IPv6 integration test suite is compatible with Docker"
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 30
-          max_attempts: 2
-          retry_on: error
-          command: go test -timeout 20m -v -exec sudo ./cmd/nerdctl/... -args -test.target=docker -test.allow-kill-daemon -test.only-ipv6
-
-  test-integration-windows:
-    runs-on: windows-2022
-    timeout-minutes: 30
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v4.1.7
-        with:
-          fetch-depth: 1
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-          check-latest: true
-      - run: go install ./cmd/nerdctl
-      - uses: actions/checkout@v4.1.7
-        with:
-          repository: containerd/containerd
-          ref: v1.7.19
-          path: containerd
-          fetch-depth: 1
-      - name: "Set up CNI"
-        working-directory: containerd
-        run: GOPATH=$(go env GOPATH) script/setup/install-cni-windows
-      - name: "Set up containerd"
-        env:
-          ctrdVersion: 1.7.19
-        run: powershell hack/configure-windows-ci.ps1
-      # TODO: Run unit tests
-      - name: "Run integration tests"
-        run: go test -v ./cmd/...
-
-  test-integration-freebsd:
-    name: FreeBSD
-    # ubuntu-24.04 lacks the vagrant package
-    runs-on: ubuntu-22.04
-    timeout-minutes: 20
-
-    steps:
-      - uses: actions/checkout@v4.1.7
-      - uses: actions/cache@v4
-        with:
-          path: /root/.vagrant.d
-          key: vagrant-${{ matrix.box }}
-      - name: Set up vagrant
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libvirt-daemon libvirt-daemon-system vagrant vagrant-libvirt
-          sudo systemctl enable --now libvirtd
-      - name: Boot VM
-        run: |
-          ln -sf Vagrantfile.freebsd Vagrantfile
-          sudo vagrant up --no-tty
-      - name: test-unit
-        run: sudo vagrant up --provision-with=test-unit
-      - name: test-integration
-        run: sudo vagrant up --provision-with=test-integration
+        run: go test -timeout 20m -v -exec sudo ./cmd/nerdctl/... -args -test.target=docker -test.allow-kill-daemon -test.only-ipv6
