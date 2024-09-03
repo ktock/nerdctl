@@ -436,7 +436,7 @@ cmd_entrypoint_install_stargz() {
 		ExecReload=/bin/kill -s HUP \$MAINPID
 		RestartSec=2
 		Restart=always
-		Type=simple
+		Type=notify
 		KillMode=mixed
 
 		[Install]
