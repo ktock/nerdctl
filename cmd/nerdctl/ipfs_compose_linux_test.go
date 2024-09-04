@@ -69,6 +69,7 @@ func TestIPFSComposeUp(t *testing.T) {
 			if tt.requiresStargz {
 				requiresStargz(base)
 			}
+			rmiAll(base)
 			ipfsImgs := make([]string, 2)
 			for i, img := range []string{testutil.WordpressImage, testutil.MariaDBImage} {
 				ipfsImgs[i] = pushImageToIPFS(t, base, img, tt.pushOptions...)
