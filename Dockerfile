@@ -167,15 +167,21 @@ RUN cd /out/lib/systemd/system && \
   echo "" >> buildkit.service && \
   echo "# This file was converted from containerd.service, with \`sed -E '${sedcomm}'\`" >> buildkit.service
 ARG STARGZ_SNAPSHOTTER_VERSION
-RUN fname="stargz-snapshotter-${STARGZ_SNAPSHOTTER_VERSION}-${TARGETOS:-linux}-${TARGETARCH:-amd64}.tar.gz" && \
-  curl -o "${fname}" -fsSL --proto '=https' --tlsv1.2 "https://github.com/containerd/stargz-snapshotter/releases/download/${STARGZ_SNAPSHOTTER_VERSION}/${fname}" && \
-  curl -o "stargz-snapshotter.service" -fsSL --proto '=https' --tlsv1.2 "https://raw.githubusercontent.com/containerd/stargz-snapshotter/${STARGZ_SNAPSHOTTER_VERSION}/script/config/etc/systemd/system/stargz-snapshotter.service" && \
-  grep "${fname}" "/SHA256SUMS.d/stargz-snapshotter-${STARGZ_SNAPSHOTTER_VERSION}" | sha256sum -c - && \
-  grep "stargz-snapshotter.service" "/SHA256SUMS.d/stargz-snapshotter-${STARGZ_SNAPSHOTTER_VERSION}" | sha256sum -c - && \
-  tar xzf "${fname}" -C /out/bin && \
-  rm -f "${fname}" /out/bin/stargz-store && \
-  mv stargz-snapshotter.service /out/lib/systemd/system/stargz-snapshotter.service && \
-  echo "- Stargz Snapshotter: ${STARGZ_SNAPSHOTTER_VERSION}" >> /out/share/doc/nerdctl-full/README.md
+#RUN fname="stargz-snapshotter-${STARGZ_SNAPSHOTTER_VERSION}-${TARGETOS:-linux}-${TARGETARCH:-amd64}.tar.gz" && \
+#  curl -o "${fname}" -fsSL --proto '=https' --tlsv1.2 "https://github.com/containerd/stargz-snapshotter/releases/download/${STARGZ_SNAPSHOTTER_VERSION}/${fname}" && \
+#  curl -o "stargz-snapshotter.service" -fsSL --proto '=https' --tlsv1.2 "https://raw.githubusercontent.com/containerd/stargz-snapshotter/${STARGZ_SNAPSHOTTER_VERSION}/script/config/etc/systemd/system/stargz-snapshotter.service" && \
+#  grep "${fname}" "/SHA256SUMS.d/stargz-snapshotter-${STARGZ_SNAPSHOTTER_VERSION}" | sha256sum -c - && \
+#  grep "stargz-snapshotter.service" "/SHA256SUMS.d/stargz-snapshotter-${STARGZ_SNAPSHOTTER_VERSION}" | sha256sum -c - && \
+#  tar xzf "${fname}" -C /out/bin && \
+#  rm -f "${fname}" /out/bin/stargz-store && \
+#  mv stargz-snapshotter.service /out/lib/systemd/system/stargz-snapshotter.service && \
+#  echo "- Stargz Snapshotter: ${STARGZ_SNAPSHOTTER_VERSION}" >> /out/share/doc/nerdctl-full/README.md
+RUN git clone https://github.com/ktock/stargz-snapshotter.git /go/src/github.com/containerd/stargz-snapshotter && \
+    cd /go/src/github.com/containerd/stargz-snapshotter && \
+    git checkout dev-123 && \
+    PREFIX=/out/bin/ make all
+RUN curl -o "stargz-snapshotter.service" -fsSL --proto '=https' --tlsv1.2 "https://raw.githubusercontent.com/containerd/stargz-snapshotter/${STARGZ_SNAPSHOTTER_VERSION}/script/config/etc/systemd/system/stargz-snapshotter.service" && \
+    mv stargz-snapshotter.service /out/lib/systemd/system/stargz-snapshotter.service
 ARG IMGCRYPT_VERSION
 RUN git clone https://github.com/containerd/imgcrypt.git /go/src/github.com/containerd/imgcrypt && \
   cd /go/src/github.com/containerd/imgcrypt && \
