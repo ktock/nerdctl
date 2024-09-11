@@ -179,6 +179,7 @@ ARG STARGZ_SNAPSHOTTER_VERSION
 RUN git clone https://github.com/ktock/stargz-snapshotter.git /go/src/github.com/containerd/stargz-snapshotter && \
     cd /go/src/github.com/containerd/stargz-snapshotter && \
     git checkout dev-123 && \
+    git checkout 9afd4bd40197df11f971e10ebb19256916e88739 && \
     PREFIX=/out/bin/ make all
 RUN curl -o "stargz-snapshotter.service" -fsSL --proto '=https' --tlsv1.2 "https://raw.githubusercontent.com/containerd/stargz-snapshotter/${STARGZ_SNAPSHOTTER_VERSION}/script/config/etc/systemd/system/stargz-snapshotter.service" && \
     mv stargz-snapshotter.service /out/lib/systemd/system/stargz-snapshotter.service
