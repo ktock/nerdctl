@@ -62,6 +62,30 @@ func TestIPFSComposeUp(t *testing.T) {
 			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
 			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
 		},
+		{
+			name:           "ipfs-address2",
+			snapshotter:    "overlayfs",
+			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		},
+		{
+			name:           "ipfs-address3",
+			snapshotter:    "overlayfs",
+			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		},
+		{
+			name:           "ipfs-address4",
+			snapshotter:    "overlayfs",
+			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		},
+		{
+			name:           "ipfs-address5",
+			snapshotter:    "overlayfs",
+			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
