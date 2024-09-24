@@ -137,7 +137,7 @@ func TestIPFSWithLazyPullingCommit(t *testing.T) {
 func pushImageToIPFS(t *testing.T, base *testutil.Base, name string, opts ...string) string {
 	base.Cmd("pull", name).AssertOK()
 	ipfsCID := cidOf(t, base.Cmd(append([]string{"push"}, append(opts, "ipfs://"+name)...)...).OutLines())
-	t.Logf("rmi: %s", base.Cmd("rmi", name).Run().Combined())
+	//t.Logf("rmi(2): %s", base.Cmd("rmi", name).Run().Combined())
 	return ipfsCID
 }
 

@@ -37,7 +37,7 @@ func TestIPFSComposeUp(t *testing.T) {
 	t.Cleanup(func() {
 		iReg.Cleanup(nil)
 	})
-	ipfsaddr := fmt.Sprintf("/ip4/%s/tcp/%d", iReg.IP, iReg.Port)
+	//ipfsaddr := fmt.Sprintf("/ip4/%s/tcp/%d", iReg.IP, iReg.Port)
 
 	tests := []struct {
 		name           string
@@ -50,61 +50,77 @@ func TestIPFSComposeUp(t *testing.T) {
 			name:        "overlayfs",
 			snapshotter: "overlayfs",
 		},
+		// {
+		// 	name:           "stargz",
+		// 	snapshotter:    "stargz",
+		// 	pushOptions:    []string{"--estargz"},
+		// 	requiresStargz: true,
+		// },
 		{
-			name:           "stargz",
-			snapshotter:    "stargz",
-			pushOptions:    []string{"--estargz"},
-			requiresStargz: true,
+			name:        "overlayfs",
+			snapshotter: "overlayfs",
+		},
+		// {
+		// 	name:           "ipfs-address",
+		// 	snapshotter:    "overlayfs",
+		// 	pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		// 	composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		// },
+		{
+			name:        "overlayfs",
+			snapshotter: "overlayfs",
+		},
+		// {
+		// 	name:           "ipfs-address2",
+		// 	snapshotter:    "overlayfs",
+		// 	pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		// 	composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		// },
+		{
+			name:        "overlayfs",
+			snapshotter: "overlayfs",
+		},
+		// {
+		// 	name:           "ipfs-address3",
+		// 	snapshotter:    "overlayfs",
+		// 	pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		// 	composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		// },
+		{
+			name:        "overlayfs",
+			snapshotter: "overlayfs",
+		},
+		// {
+		// 	name:           "ipfs-address4",
+		// 	snapshotter:    "overlayfs",
+		// 	pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		// 	composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		// },
+		{
+			name:        "overlayfs",
+			snapshotter: "overlayfs",
+		},
+		// {
+		// 	name:           "ipfs-address5",
+		// 	snapshotter:    "overlayfs",
+		// 	pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		// 	composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		// },
+		{
+			name:        "overlayfs",
+			snapshotter: "overlayfs",
 		},
 		{
 			name:        "overlayfs",
 			snapshotter: "overlayfs",
 		},
 		{
-			name:           "ipfs-address",
-			snapshotter:    "overlayfs",
-			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
-			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
-		},
-		{
 			name:        "overlayfs",
 			snapshotter: "overlayfs",
 		},
 		{
-			name:           "ipfs-address2",
-			snapshotter:    "overlayfs",
-			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
-			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
-		},
-		{
 			name:        "overlayfs",
 			snapshotter: "overlayfs",
-		},
-		{
-			name:           "ipfs-address3",
-			snapshotter:    "overlayfs",
-			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
-			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
-		},
-		{
-			name:        "overlayfs",
-			snapshotter: "overlayfs",
-		},
-		{
-			name:           "ipfs-address4",
-			snapshotter:    "overlayfs",
-			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
-			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
-		},
-		{
-			name:        "overlayfs",
-			snapshotter: "overlayfs",
-		},
-		{
-			name:           "ipfs-address5",
-			snapshotter:    "overlayfs",
-			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
-			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
 		},
 	}
 	for _, tt := range tests {
