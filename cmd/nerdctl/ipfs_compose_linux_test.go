@@ -57,10 +57,18 @@ func TestIPFSComposeUp(t *testing.T) {
 			requiresStargz: true,
 		},
 		{
+			name:        "overlayfs",
+			snapshotter: "overlayfs",
+		},
+		{
 			name:           "ipfs-address",
 			snapshotter:    "overlayfs",
 			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
 			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		},
+		{
+			name:        "overlayfs",
+			snapshotter: "overlayfs",
 		},
 		{
 			name:           "ipfs-address2",
@@ -69,16 +77,28 @@ func TestIPFSComposeUp(t *testing.T) {
 			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
 		},
 		{
+			name:        "overlayfs",
+			snapshotter: "overlayfs",
+		},
+		{
 			name:           "ipfs-address3",
 			snapshotter:    "overlayfs",
 			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
 			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
 		},
 		{
+			name:        "overlayfs",
+			snapshotter: "overlayfs",
+		},
+		{
 			name:           "ipfs-address4",
 			snapshotter:    "overlayfs",
 			pushOptions:    []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
 			composeOptions: []string{fmt.Sprintf("--ipfs-address=%s", ipfsaddr)},
+		},
+		{
+			name:        "overlayfs",
+			snapshotter: "overlayfs",
 		},
 		{
 			name:           "ipfs-address5",
