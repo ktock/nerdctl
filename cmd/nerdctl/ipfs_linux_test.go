@@ -26,6 +26,8 @@ import (
 	"github.com/containerd/nerdctl/v2/pkg/rootlessutil"
 	"github.com/containerd/nerdctl/v2/pkg/testutil"
 	"github.com/containerd/nerdctl/v2/pkg/testutil/testregistry"
+
+	"gotest.tools/v3/icmd"
 )
 
 func TestIPFS(t *testing.T) {
@@ -136,6 +138,8 @@ func TestIPFSWithLazyPullingCommit(t *testing.T) {
 
 func pushImageToIPFS(t *testing.T, base *testutil.Base, name string, opts ...string) string {
 	base.Cmd("pull", name).AssertOK()
+	res := icmd.RunCmd(icmd.Command("ctr", "--namespace=nerdctl", "content", "list"))
+	fmt.Println(res.Stdout())
 	ipfsCID := cidOf(t, base.Cmd(append([]string{"push"}, append(opts, "ipfs://"+name)...)...).OutLines())
 	//t.Logf("rmi(2): %s", base.Cmd("rmi", name).Run().Combined())
 	return ipfsCID
