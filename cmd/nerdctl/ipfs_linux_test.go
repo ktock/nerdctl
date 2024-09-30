@@ -137,9 +137,19 @@ func TestIPFSWithLazyPullingCommit(t *testing.T) {
 }
 
 func pushImageToIPFS(t *testing.T, base *testutil.Base, name string, opts ...string) string {
-	base.Cmd("pull", name).AssertOK()
 	res := icmd.RunCmd(icmd.Command("ctr", "--namespace=nerdctl-test", "content", "list"))
-	t.Logf("ctr: %s", res.Stdout())
+	t.Logf("ctr content (BEFORE,nerdctl-test): %s", res.Stdout())
+	res = icmd.RunCmd(icmd.Command("ctr", "--namespace=nerdctl-test", "image", "list"))
+	t.Logf("ctr image (BEFORE,nerdctl-test): %s", res.Stdout())
+	pullRes := base.Cmd("pull", name).Out()
+	t.Logf("pull: %s", pullRes)
+	res = icmd.RunCmd(icmd.Command("ctr", "--namespace=nerdctl-test", "content", "list"))
+	t.Logf("ctr content (AFTER,nerdctl-test): %s", res.Stdout())
+	res = icmd.RunCmd(icmd.Command("ctr", "--namespace=nerdctl-test", "image", "list"))
+	t.Logf("ctr image (AFTER,nerdctl-test): %s", res.Stdout())
+	res = icmd.RunCmd(icmd.Command("ctr", "content", "list"))
+	t.Logf("ctr(default): %s", res.Stdout())
+
 	ipfsCID := cidOf(t, base.Cmd(append([]string{"push"}, append(opts, "ipfs://"+name)...)...).OutLines())
 	//t.Logf("rmi(2): %s", base.Cmd("rmi", name).Run().Combined())
 	return ipfsCID
