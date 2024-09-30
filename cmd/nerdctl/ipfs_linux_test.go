@@ -137,6 +137,8 @@ func TestIPFSWithLazyPullingCommit(t *testing.T) {
 }
 
 func pushImageToIPFS(t *testing.T, base *testutil.Base, name string, opts ...string) string {
+	t.Logf("rmi(1): %s", base.Cmd("rmi", name).Run().Combined())
+	
 	res := icmd.RunCmd(icmd.Command("ctr", "--namespace=nerdctl-test", "content", "list"))
 	t.Logf("ctr content (BEFORE,nerdctl-test): %s", res.Stdout())
 	res = icmd.RunCmd(icmd.Command("ctr", "--namespace=nerdctl-test", "image", "list"))
