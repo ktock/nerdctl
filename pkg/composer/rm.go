@@ -82,7 +82,7 @@ func (c *Composer) removeContainers(ctx context.Context, containers []containerd
 				cStatus := formatter.ContainerStatus(ctx, container)
 				if strings.HasPrefix(cStatus, "Up") {
 					log.G(ctx).Warnf("Removing container %s failed: container still running.", info.Labels[labels.Name])
-					return fmt.Errorf("Removing container %s failed: container still running.", info.Labels[labels.Name])
+					//return fmt.Errorf("Removing container %s failed: container still running.", info.Labels[labels.Name])
 				}
 			}
 
