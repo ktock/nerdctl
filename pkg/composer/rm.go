@@ -20,6 +20,7 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"fmt"
 
 	containerd "github.com/containerd/containerd/v2/client"
 	"github.com/containerd/log"
@@ -28,6 +29,7 @@ import (
 	"github.com/containerd/nerdctl/v2/pkg/formatter"
 	"github.com/containerd/nerdctl/v2/pkg/labels"
 	"github.com/containerd/nerdctl/v2/pkg/strutil"
+	"golang.org/x/sync/errgroup"
 )
 
 // RemoveOptions stores all options when removing compose containers:
@@ -69,31 +71,31 @@ func (c *Composer) removeContainers(ctx context.Context, containers []containerd
 		args = append(args, "-v")
 	}
 
-	var rmWG sync.WaitGroup
+	eg, _ := errgroup.WithContext(ctx)
+	//var rmWG sync.WaitGroup
 	for _, container := range containers {
 		container := container
-		rmWG.Add(1)
-		go func() {
-			defer rmWG.Done()
+		eg.Go(func() error {
 			info, _ := container.Info(ctx, containerd.WithoutRefreshedMetadata)
 			// if not `Stop`, check status and skip running container
 			if !opt.Stop {
 				cStatus := formatter.ContainerStatus(ctx, container)
 				if strings.HasPrefix(cStatus, "Up") {
 					log.G(ctx).Warnf("Removing container %s failed: container still running.", info.Labels[labels.Name])
-					return
+					return fmt.Errorf("Removing container %s failed: container still running.", info.Labels[labels.Name])
 				}
 			}
 
 			log.G(ctx).Infof("Removing container %s", info.Labels[labels.Name])
 			if err := c.runNerdctlCmd(ctx, append(args, container.ID())...); err != nil {
 				log.G(ctx).Warn(err)
+				return fmt.Errorf("failed to remove container %s %w\n", container.ID(), err)
 			}
-		}()
+			return nil
+		})
 	}
-	rmWG.Wait()
-
-	return nil
+	
+	return eg.Wait()
 }
 
 func (c *Composer) removeContainersFromParsedServices(ctx context.Context, containers map[string]serviceparser.Container) {

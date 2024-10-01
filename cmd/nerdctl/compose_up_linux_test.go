@@ -118,7 +118,11 @@ func testComposeUp(t *testing.T, base *testutil.Base, dockerComposeYAML string, 
 	}
 	t.Log("wordpress seems functional")
 
+	res := icmd.RunCmd(icmd.Command("ctr", "--namespace=nerdctl-test", "container", "list"))
+	t.Logf("ctr container (>>>>>>nerdctl-test): %s", res.Combined())
+	
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
+	
 	base.Cmd("volume", "inspect", fmt.Sprintf("%s_db", projectName)).AssertFail()
 	base.Cmd("network", "inspect", fmt.Sprintf("%s_default", projectName)).AssertFail()
 }

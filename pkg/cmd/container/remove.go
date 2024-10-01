@@ -191,11 +191,13 @@ func RemoveContainer(ctx context.Context, c containerd.Container, globalOptions 
 
 		// Delete the container now. If it fails, try again without snapshot cleanup
 		// If it still fails, time to stop.
-		if c.Delete(ctx, delOpts...) != nil {
-			retErr = c.Delete(ctx)
-			if retErr != nil {
-				return
-			}
+		if err := c.Delete(ctx, delOpts...); err != nil {
+			retErr = fmt.Errorf("failed to delete container with snapshotter: %w", err)
+			return
+			// retErr = c.Delete(ctx)
+			// if retErr != nil {
+			// 	return
+			// }
 		}
 
 		// Container has been removed successfully. Now we just finish the cleanup on our side.
