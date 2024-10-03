@@ -80,7 +80,7 @@ func testComposeUp(t *testing.T, base *testutil.Base, dockerComposeYAML string, 
 	t.Logf("projectName=%q", projectName)
 
 	base.ComposeCmd(append(append([]string{"-f", comp.YAMLFullPath()}, opts...), "up", "-d")...).AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 	base.Cmd("volume", "inspect", fmt.Sprintf("%s_db", projectName)).AssertOK()
 	base.Cmd("network", "inspect", fmt.Sprintf("%s_default", projectName)).AssertOK()
 
@@ -153,7 +153,7 @@ COPY index.html /usr/share/nginx/html/index.html
 	comp.WriteFile("index.html", indexHTML)
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d", "--build").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	resp, err := nettestutil.HTTPGet("http://127.0.0.1:8080", 50, false)
 	assert.NilError(t, err)
@@ -190,7 +190,7 @@ networks:
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	svc0 := serviceparser.DefaultContainerName(projectName, "svc0", "1")
 	inspectCmd := base.Cmd("inspect", svc0, "--format", "\"{{range .NetworkSettings.Networks}} {{.IPAddress}}{{end}}\"")
@@ -239,7 +239,7 @@ networks:
 	t.Logf("projectName=%q", projectName)
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	svc0 := serviceparser.DefaultContainerName(projectName, "svc0", "1")
 	svc1 := serviceparser.DefaultContainerName(projectName, "svc1", "1")
@@ -275,7 +275,7 @@ services:
 	base.Env = append(base.Env, "ADDRESS=0.0.0.0")
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	inspect := base.InspectContainer(containerName)
 	inspect80TCP := (*inspect.NetworkSettings.Ports)["80/tcp"]
@@ -306,7 +306,7 @@ services:
 	comp.WriteFile(".env", envFile)
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 }
 
 func TestComposeUpEnvFileNotFoundError(t *testing.T) {
@@ -330,7 +330,7 @@ services:
 
 	//env-file is relative to the current working directory and not the project directory
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "--env-file", "envFile", "up", "-d").AssertFail()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 }
 
 func TestComposeUpWithScale(t *testing.T) {
@@ -351,7 +351,7 @@ services:
 	t.Logf("projectName=%q", projectName)
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d", "--scale", "test=2").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "ps").AssertOutContains(serviceparser.DefaultContainerName(projectName, "test", "2"))
 }
@@ -380,7 +380,7 @@ networks:
 	t.Logf("projectName=%q", projectName)
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	base.Cmd("inspect", "-f", `{{json .NetworkSettings.Networks }}`, serviceparser.DefaultContainerName(projectName, "foo", "1")).AssertOutContains("10.1.100.")
 }
@@ -417,7 +417,7 @@ services:
 	orphanContainer := serviceparser.DefaultContainerName(projectName, "orphan", "1")
 
 	base.ComposeCmd("-p", projectName, "-f", compFull.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-p", projectName, "-f", compFull.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-p", projectName, "-f", compFull.YAMLFullPath(), "down", "-v").AssertOK()
 	base.ComposeCmd("-p", projectName, "-f", compOrphan.YAMLFullPath(), "up", "-d").AssertOK()
 	base.ComposeCmd("-p", projectName, "-f", compFull.YAMLFullPath(), "ps").AssertOutContains(orphanContainer)
 	base.ComposeCmd("-p", projectName, "-f", compOrphan.YAMLFullPath(), "up", "-d", "--remove-orphans").AssertOK()
@@ -442,7 +442,7 @@ services:
 	t.Logf("projectName=%q", projectName)
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d").AssertOK()
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "down").AssertOK()
 }
@@ -489,10 +489,10 @@ networks:
 	defer base.Cmd("network", "rm", networkName).Run()
 	// Run the first compose
 	base.ComposeCmd("-f", comp1.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-f", comp1.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp1.YAMLFullPath(), "down", "-v").AssertOK()
 	// Run the second compose
 	base.ComposeCmd("-f", comp2.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-f", comp2.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp2.YAMLFullPath(), "down", "-v").AssertOK()
 	// Down the second compose
 	base.ComposeCmd("-f", comp2.YAMLFullPath(), "down", "-v").AssertOK()
 	// Run the second compose again

@@ -51,7 +51,7 @@ services:
 	defer comp.CleanUp()
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	defer base.Cmd("rm", "-f", "-v", containerName).Run()
 	const sttyPartialOutput = "speed 38400 baud"
@@ -81,7 +81,7 @@ services:
 	defer comp.CleanUp()
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	defer base.Cmd("rm", "-f", "-v", containerName).Run()
 	const sttyPartialOutput = "speed 38400 baud"
@@ -121,7 +121,7 @@ services:
 	defer comp.CleanUp()
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	defer base.Cmd("rm", "-f", "-v", containerName).Run()
 	go func() {
@@ -181,7 +181,7 @@ services:
 	defer comp.CleanUp()
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	defer base.Cmd("rm", "-f", "-v", containerName).Run()
 	go func() {
@@ -245,7 +245,7 @@ services:
 	defer comp.CleanUp()
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	defer base.Cmd("rm", "-f", "-v", containerName).Run()
 	const partialOutput = "bar"
@@ -276,7 +276,7 @@ services:
 	defer comp.CleanUp()
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	defer base.Cmd("rm", "-f", "-v", containerName).Run()
 	const partialOutput = "5000"
@@ -307,7 +307,7 @@ services:
 	defer comp.CleanUp()
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	defer base.Cmd("rm", "-f", "-v", containerName).Run()
 	// unbuffer(1) emulates tty, which is required by `nerdctl run -t`.
@@ -342,7 +342,7 @@ services:
 	defer comp.CleanUp()
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	defer base.Cmd("rm", "-f", "-v", containerName).Run()
 	const partialOutput = "hello world"
@@ -372,7 +372,7 @@ services:
 	defer comp.CleanUp()
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	defer base.Cmd("rm", "-f", "-v", containerName).Run()
 	const partialOutput = "hello world"
@@ -400,7 +400,7 @@ services:
 	defer comp.CleanUp()
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	// The directory is automatically removed by Cleanup
 	tmpDir := t.TempDir()
@@ -486,7 +486,7 @@ services:
 
 	projectName := comp.ProjectName()
 	t.Logf("projectName=%q", projectName)
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	// 1. build both services/images
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "build").AssertOK()

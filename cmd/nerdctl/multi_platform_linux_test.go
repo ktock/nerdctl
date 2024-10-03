@@ -153,7 +153,7 @@ RUN uname -m > /usr/share/nginx/html/index.html
 	comp.WriteFile("Dockerfile", dockerfile)
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d", "--build").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	testCases := map[string]string{
 		"http://127.0.0.1:8080": "x86_64",

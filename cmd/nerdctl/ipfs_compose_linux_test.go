@@ -205,7 +205,7 @@ COPY index.html /usr/share/nginx/html/index.html
 	done := ipfsRegistryUp(t, base)
 	defer done()
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d", "--build").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	resp, err := nettestutil.HTTPGet("http://127.0.0.1:8080", 50, false)
 	assert.NilError(t, err)

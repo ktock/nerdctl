@@ -64,7 +64,7 @@ volumes:
 	t.Logf("projectName=%q", projectName)
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "kill", "db").AssertOK()
 	time.Sleep(3 * time.Second)

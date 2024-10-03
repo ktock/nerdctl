@@ -93,7 +93,7 @@ services:
 	orphanContainer := serviceparser.DefaultContainerName(projectName, "orphan", "1")
 
 	base.ComposeCmd("-p", projectName, "-f", compFull.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-p", projectName, "-f", compFull.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-p", projectName, "-f", compFull.YAMLFullPath(), "down", "-v").AssertOK()
 
 	base.ComposeCmd("-p", projectName, "-f", compOrphan.YAMLFullPath(), "down", "--remove-orphans").AssertOK()
 	base.ComposeCmd("-p", projectName, "-f", compFull.YAMLFullPath(), "ps", "-a").AssertOutNotContains(orphanContainer)
