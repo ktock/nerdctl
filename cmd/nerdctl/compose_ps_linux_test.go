@@ -147,7 +147,7 @@ volumes:
 	t.Logf("projectName=%q", projectName)
 
 	base.ComposeCmd("-f", comp.YAMLFullPath(), "up", "-d").AssertOK()
-	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").Run()
+	defer base.ComposeCmd("-f", comp.YAMLFullPath(), "down", "-v").AssertOK()
 
 	assertHandler := func(svc string, count int, fields ...string) func(stdout string) error {
 		return func(stdout string) error {
