@@ -1,0 +1,62 @@
+# Runs only TestPullStargzInvalidChainID against a rootful nerdctl + containerd + stargz-snapshotter,
+# provisioned the same way as job-test-in-host.yml.
+name: test-stargz-invalid-chainid
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+
+env:
+  GOTOOLCHAIN: local
+
+jobs:
+  test:
+    name: "TestPullStargzInvalidChainID"
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: "Init: checkout"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: "Init: install go"
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
+        with:
+          go-version: 1.26
+          check-latest: true
+
+      - name: "Init: remove snap loopback devices"
+        run: |
+          sudo systemctl disable --now snapd.service snapd.socket
+          sudo apt-get purge -qq snapd
+          sudo losetup -Dv
+
+      - name: "Init: set up Docker Buildx"
+        uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003  # v4.4.0
+
+      - name: "Init: build test artifacts"
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
+        with:
+          context: .
+          push: false
+          target: out-test-integration-artifacts
+          outputs: type=local,dest=/tmp/nerdctl-test-artifacts
+          cache-from: type=gha,scope=test-integration-dependencies-amd64
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
+
+      # Docker cannot be used anymore past this point.
+      - name: "Init: provision the host"
+        run: |
+          sudo env GITHUB_ACTIONS="$GITHUB_ACTIONS" ./hack/provisioning/linux/test-integration-env.sh install /tmp/nerdctl-test-artifacts rootful
+
+      - name: "Run: TestPullStargzInvalidChainID"
+        run: |
+          go test -v -count=1 -timeout=20m -p 1 -run '^TestPullStargzInvalidChainID$' \
+            -exec sudo ./cmd/nerdctl/container/ \
+            -args -test.target=nerdctl -test.allow-kill-daemon -test.allow-modify-users=true

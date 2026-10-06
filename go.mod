@@ -20,9 +20,9 @@ require (
 	github.com/containerd/nerdctl/mod/tigron v0.0.0 //gomodjail:unconfined
 	github.com/containerd/nydus-snapshotter v0.16.0 //gomodjail:unconfined
 	github.com/containerd/platforms v1.0.0-rc.5 //gomodjail:unconfined
-	github.com/containerd/stargz-snapshotter v0.18.2 //gomodjail:unconfined
-	github.com/containerd/stargz-snapshotter/estargz v0.18.2 //gomodjail:unconfined
-	github.com/containerd/stargz-snapshotter/ipfs v0.18.2 //gomodjail:unconfined
+	github.com/containerd/stargz-snapshotter v0.19.0 //gomodjail:unconfined
+	github.com/containerd/stargz-snapshotter/estargz v0.19.0 //gomodjail:unconfined
+	github.com/containerd/stargz-snapshotter/ipfs v0.19.0 //gomodjail:unconfined
 	github.com/containerd/typeurl/v2 v2.3.0
 	github.com/docker/cli v29.8.2+incompatible //gomodjail:unconfined
 	github.com/docker/go-connections v0.8.1 //gomodjail:unconfined
@@ -171,7 +171,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.4 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260825221802-da73d73af1c5 // indirect
 	//gomodjail:unconfined
-	google.golang.org/grpc v1.83.2 // indirect
+	google.golang.org/grpc v1.84.0 // indirect
 	//gomodjail:unconfined
 	google.golang.org/protobuf v1.36.12 // indirect
 	//gomodjail:unconfined
@@ -179,6 +179,22 @@ require (
 	//gomodjail:unconfined
 	sigs.k8s.io/knftables v0.0.18 // indirect
 	tags.cncf.io/container-device-interface/specs-go v1.1.1 // indirect
+)
+
+require (
+	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/docker/go-metrics v0.1.0 // indirect
+	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
+	github.com/hanwen/go-fuse/v2 v2.11.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/prometheus/client_golang v1.24.1 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
+	github.com/prometheus/common v0.70.1 // indirect
+	github.com/prometheus/procfs v0.21.1 // indirect
+	go.etcd.io/bbolt v1.5.0 // indirect
+	k8s.io/cri-api v0.37.1 // indirect
 )
 
 replace github.com/containerd/nerdctl/mod/tigron v0.0.0 => ./mod/tigron
