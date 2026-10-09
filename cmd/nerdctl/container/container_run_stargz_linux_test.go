@@ -203,6 +203,7 @@ func TestPullStargzInvalidChainID(t *testing.T) {
 
 	testCase.Command = func(data test.Data, helpers test.Helpers) test.TestableCommand {
 		helpers.Ensure("--snapshotter=stargz", "pull", data.Labels().Get("invalid"))
+		helpers.Ensure("--snapshotter=stargz", "images")
 		return helpers.Command("--snapshotter=stargz", "pull", data.Labels().Get("esgz"))
 	}
 

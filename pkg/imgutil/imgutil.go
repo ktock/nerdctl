@@ -247,9 +247,12 @@ func PullImage(ctx context.Context, client *containerd.Client, resolver remotes.
 		// different remote snapshotters will update pull.Config separately
 		snOpt.apply(config, ref, options.RFlags)
 		if snOpt.needsVerify() {
+			fmt.Println("verify", ref)
 			if err := snOpt.verify(ctx, client, ref, resolver); err != nil {
+				fmt.Println("verify a", ref, err)
 				return nil, fmt.Errorf("snapshot verifier returned an error: %w", err)
 			}
+			fmt.Println("verify b", ref, err)
 		}
 	} else {
 		log.G(ctx).Debugf("The image will not be unpacked. Platforms=%v.", options.OCISpecPlatform)

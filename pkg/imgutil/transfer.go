@@ -138,20 +138,26 @@ func PullImageWithTransfer(ctx context.Context, client *containerd.Client, parse
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("transferverify", rawRef)
 		if err := snOpt.verify(ctx, client, rawRef, resolver); err != nil {
+			fmt.Println("verify 1", rawRef, err)
 			if !errors.Is(err, http.ErrSchemeMismatch) && !errutil.IsErrConnectionRefused(err) {
+				fmt.Println("transferverify a", rawRef, err)
 				return nil, fmt.Errorf("snapshot verifier returned an error: %w", err)
 			}
 			if !options.GOptions.InsecureRegistry {
+				fmt.Println("transferverify b", rawRef, err)
 				return nil, fmt.Errorf("server doesn't seem to support HTTPS: %w", err)
 			}
 			log.G(ctx).WithError(err).Warnf("server %q does not seem to support HTTPS, falling back to plain HTTP", parsedReference.Domain)
 			dOpts = append(dOpts, dockerconfigresolver.WithPlainHTTP(true))
 			resolver, err = dockerconfigresolver.New(ctx, parsedReference.Domain, dOpts...)
 			if err != nil {
+				fmt.Println("transferverify c", rawRef, err)
 				return nil, err
 			}
 			if err := snOpt.verify(ctx, client, rawRef, resolver); err != nil {
+				fmt.Println("transferverify d", rawRef, err)
 				return nil, fmt.Errorf("snapshot verifier returned an error: %w", err)
 			}
 		}
