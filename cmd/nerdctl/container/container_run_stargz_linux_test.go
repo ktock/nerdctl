@@ -177,7 +177,13 @@ func TestPullStargzInvalidChainID(t *testing.T) {
 		helpers.Ensure("push", invalid)
 
 		// Remove local copies so that the following pulls fetch from the registry
-		helpers.Ensure("rmi", "-f", esgz, invalid)
+		// (tolerate refs that are already gone)
+		helpers.Anyhow("rmi", "-f", esgz)
+		helpers.Anyhow("rmi", "-f", invalid)
+		// The base image may have been unpacked into the stargz snapshotter by the pull above. The snapshot
+		// sharing the ChainID with the images in the registry would make the verifier refuse the first pull
+		// below, so remove it (removal is synchronous, so its snapshots are gone afterwards).
+		helpers.Ensure("rmi", "-f", testutil.AlpineImage)
 
 		data.Labels().Set("esgz", esgz)
 		data.Labels().Set("invalid", invalid)
