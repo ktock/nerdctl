@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"slices"
 	"sort"
 	"testing"
 
@@ -69,9 +70,10 @@ func TestRunStargz(t *testing.T) {
 	testCase.Run(t)
 }
 
-// createInvalidESGZImage creates an eStargz image from the first layer of srcRef with an extra file added to
-// the layer, while keeping the original image config. As the diffID in the config doesn't match the modified
-// layer, the resulting image has an invalid ChainID. The image is stored in containerd as newRef.
+// createInvalidESGZImage creates an eStargz image from the first layer of srcRef (an eStargz image) with an extra
+// file added to the layer, while keeping the original image config. As the diffID in the config (the one of srcRef)
+// doesn't match the modified layer, the resulting image has the same ChainID as srcRef but different contents and
+// TOC digest. The image is stored in containerd as newRef.
 func createInvalidESGZImage(ctx context.Context, t tig.T, client *containerd.Client, srcRef, newRef string) {
 	cs := client.ContentStore()
 	srcImg, err := client.GetImage(ctx, srcRef)
@@ -175,13 +177,13 @@ func diffIDOfLayer(ctx context.Context, cs content.Store, desc imagespec.Descrip
 
 // dumpImage logs what the stargz verifier looks at for the image: the layers (with the TOC digest annotation and
 // the actual diffID of the blob), and the diffIDs / ChainIDs recorded in the image config.
-func dumpImage(ctx context.Context, t tig.T, client *containerd.Client, ref string) {
+func dumpImage(ctx context.Context, t tig.T, client *containerd.Client, ref string) []digest.Digest {
 	t.Helper()
 	cs := client.ContentStore()
 	img, err := client.GetImage(ctx, ref)
 	if err != nil {
 		t.Log(fmt.Sprintf("[dump] image %s: %v", ref, err))
-		return
+		return nil
 	}
 	manifest, err := images.Manifest(ctx, cs, img.Target(), platforms.Default())
 	assert.NilError(t, err)
@@ -204,14 +206,18 @@ func dumpImage(ctx context.Context, t tig.T, client *containerd.Client, ref stri
 	chainIDs := identity.ChainIDs(append([]digest.Digest{}, config.RootFS.DiffIDs...))
 	fmt.Fprintf(&out, "  chainIDs from config=%v\n", chainIDs)
 	t.Log(out.String())
+	return chainIDs
 }
 
-// dumpStargzSnapshots logs the snapshots known to the stargz snapshotter, with their labels.
-func dumpStargzSnapshots(ctx context.Context, t tig.T, client *containerd.Client, title string) {
+// dumpStargzSnapshots logs the stargz snapshots whose name is one of chainIDs, with their labels.
+func dumpStargzSnapshots(ctx context.Context, t tig.T, client *containerd.Client, title string, chainIDs []digest.Digest) {
 	t.Helper()
 	var out bytes.Buffer
 	fmt.Fprintf(&out, "[dump] stargz snapshots (%s)\n", title)
 	err := client.SnapshotService("stargz").Walk(ctx, func(_ context.Context, info snapshots.Info) error {
+		if !slices.Contains(chainIDs, digest.Digest(info.Name)) {
+			return nil
+		}
 		fmt.Fprintf(&out, "  name=%s kind=%s parent=%s\n", info.Name, info.Kind, info.Parent)
 		keys := make([]string, 0, len(info.Labels))
 		for k := range info.Labels {
@@ -256,19 +262,18 @@ func TestPullStargzInvalidChainID(t *testing.T) {
 		// An eStargz image whose layer doesn't match the diffID in the config
 		client := newTestContainerdClient(helpers)
 		defer client.Close()
-		createInvalidESGZImage(context.Background(), helpers.T(), client, testutil.AlpineImage, invalid)
+		createInvalidESGZImage(context.Background(), helpers.T(), client, esgz, invalid)
 		helpers.Ensure("push", invalid)
-		dumpImage(context.Background(), helpers.T(), client, esgz)
+		chainIDs := dumpImage(context.Background(), helpers.T(), client, esgz)
 		dumpImage(context.Background(), helpers.T(), client, invalid)
+		ids, err := json.Marshal(chainIDs)
+		assert.NilError(helpers.T(), err)
+		data.Labels().Set("chainids", string(ids))
 
 		// Remove local copies so that the following pulls fetch from the registry
 		// (tolerate refs that are already gone)
 		helpers.Anyhow("rmi", "-f", esgz)
 		helpers.Anyhow("rmi", "-f", invalid)
-		// The base image may have been unpacked into the stargz snapshotter by the pull above. The snapshot
-		// sharing the ChainID with the images in the registry would make the verifier refuse the first pull
-		// below, so remove it (removal is synchronous, so its snapshots are gone afterwards).
-		helpers.Ensure("rmi", "-f", testutil.AlpineImage)
 
 		data.Labels().Set("esgz", esgz)
 		data.Labels().Set("invalid", invalid)
@@ -290,10 +295,12 @@ func TestPullStargzInvalidChainID(t *testing.T) {
 		client := newTestContainerdClient(helpers)
 		defer client.Close()
 		ctx := context.Background()
-		dumpStargzSnapshots(ctx, helpers.T(), client, "before the first pull")
+		var chainIDs []digest.Digest
+		assert.NilError(helpers.T(), json.Unmarshal([]byte(data.Labels().Get("chainids")), &chainIDs))
+		dumpStargzSnapshots(ctx, helpers.T(), client, "before the first pull", chainIDs)
 		helpers.Ensure("--snapshotter=stargz", "pull", data.Labels().Get("invalid"))
 		dumpImage(ctx, helpers.T(), client, data.Labels().Get("invalid"))
-		dumpStargzSnapshots(ctx, helpers.T(), client, "after pulling the invalid image")
+		dumpStargzSnapshots(ctx, helpers.T(), client, "after pulling the invalid image", chainIDs)
 		helpers.Ensure("--snapshotter=stargz", "images")
 		return helpers.Command("--snapshotter=stargz", "pull", data.Labels().Get("esgz"))
 	}
