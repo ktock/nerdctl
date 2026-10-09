@@ -26,8 +26,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"slices"
-	"sort"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -35,7 +33,6 @@ import (
 	containerd "github.com/containerd/containerd/v2/client"
 	"github.com/containerd/containerd/v2/core/content"
 	"github.com/containerd/containerd/v2/core/images"
-	"github.com/containerd/containerd/v2/core/snapshots"
 	"github.com/containerd/containerd/v2/defaults"
 	"github.com/containerd/nerdctl/mod/tigron/expect"
 	"github.com/containerd/nerdctl/mod/tigron/require"
@@ -44,7 +41,6 @@ import (
 	"github.com/containerd/platforms"
 	"github.com/containerd/stargz-snapshotter/estargz"
 	digest "github.com/opencontainers/go-digest"
-	"github.com/opencontainers/image-spec/identity"
 	imagespecversioned "github.com/opencontainers/image-spec/specs-go"
 	imagespec "github.com/opencontainers/image-spec/specs-go/v1"
 
@@ -156,85 +152,6 @@ func newTestContainerdClient(helpers test.Helpers) *containerd.Client {
 	return client
 }
 
-// diffIDOfLayer returns the digest of the decompressed content of the layer blob.
-func diffIDOfLayer(ctx context.Context, cs content.Store, desc imagespec.Descriptor) (digest.Digest, error) {
-	ra, err := cs.ReaderAt(ctx, desc)
-	if err != nil {
-		return "", err
-	}
-	defer ra.Close()
-	gz, err := gzip.NewReader(content.NewReader(ra))
-	if err != nil {
-		return "", err
-	}
-	defer gz.Close()
-	dgstr := digest.Canonical.Digester()
-	if _, err := io.Copy(dgstr.Hash(), gz); err != nil {
-		return "", err
-	}
-	return dgstr.Digest(), nil
-}
-
-// dumpImage logs what the stargz verifier looks at for the image: the layers (with the TOC digest annotation and
-// the actual diffID of the blob), and the diffIDs / ChainIDs recorded in the image config.
-func dumpImage(ctx context.Context, t tig.T, client *containerd.Client, ref string) []digest.Digest {
-	t.Helper()
-	cs := client.ContentStore()
-	img, err := client.GetImage(ctx, ref)
-	if err != nil {
-		t.Log(fmt.Sprintf("[dump] image %s: %v", ref, err))
-		return nil
-	}
-	manifest, err := images.Manifest(ctx, cs, img.Target(), platforms.Default())
-	assert.NilError(t, err)
-	var config imagespec.Image
-	cfgBlob, err := content.ReadBlob(ctx, cs, manifest.Config)
-	assert.NilError(t, err)
-	assert.NilError(t, json.Unmarshal(cfgBlob, &config))
-	var out bytes.Buffer
-	fmt.Fprintf(&out, "[dump] image %s (target=%s %s)\n", ref, img.Target().MediaType, img.Target().Digest)
-	fmt.Fprintf(&out, "  config=%s\n", manifest.Config.Digest)
-	for i, l := range manifest.Layers {
-		actual, err := diffIDOfLayer(ctx, cs, l)
-		fmt.Fprintf(&out, "  layer[%d] digest=%s size=%d mediatype=%s\n", i, l.Digest, l.Size, l.MediaType)
-		fmt.Fprintf(&out, "    toc-digest annotation=%q\n", l.Annotations[estargz.TOCJSONDigestAnnotation])
-		fmt.Fprintf(&out, "    actual diffID of blob=%s (err=%v)\n", actual, err)
-		if i < len(config.RootFS.DiffIDs) {
-			fmt.Fprintf(&out, "    diffID in config    =%s (match=%v)\n", config.RootFS.DiffIDs[i], config.RootFS.DiffIDs[i] == actual)
-		}
-	}
-	chainIDs := identity.ChainIDs(append([]digest.Digest{}, config.RootFS.DiffIDs...))
-	fmt.Fprintf(&out, "  chainIDs from config=%v\n", chainIDs)
-	t.Log(out.String())
-	return chainIDs
-}
-
-// dumpStargzSnapshots logs the stargz snapshots whose name is one of chainIDs, with their labels.
-func dumpStargzSnapshots(ctx context.Context, t tig.T, client *containerd.Client, title string, chainIDs []digest.Digest) {
-	t.Helper()
-	var out bytes.Buffer
-	fmt.Fprintf(&out, "[dump] stargz snapshots (%s)\n", title)
-	err := client.SnapshotService("stargz").Walk(ctx, func(_ context.Context, info snapshots.Info) error {
-		if !slices.Contains(chainIDs, digest.Digest(info.Name)) {
-			return nil
-		}
-		fmt.Fprintf(&out, "  name=%s kind=%s parent=%s\n", info.Name, info.Kind, info.Parent)
-		keys := make([]string, 0, len(info.Labels))
-		for k := range info.Labels {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
-			fmt.Fprintf(&out, "    %s=%s\n", k, info.Labels[k])
-		}
-		return nil
-	})
-	if err != nil {
-		fmt.Fprintf(&out, "  walk error: %v\n", err)
-	}
-	t.Log(out.String())
-}
-
 func TestPullStargzInvalidChainID(t *testing.T) {
 	testCase := nerdtest.Setup()
 
@@ -264,16 +181,9 @@ func TestPullStargzInvalidChainID(t *testing.T) {
 		defer client.Close()
 		createInvalidESGZImage(context.Background(), helpers.T(), client, esgz, invalid)
 		helpers.Ensure("push", invalid)
-		chainIDs := dumpImage(context.Background(), helpers.T(), client, esgz)
-		dumpImage(context.Background(), helpers.T(), client, invalid)
-		ids, err := json.Marshal(chainIDs)
-		assert.NilError(helpers.T(), err)
-		data.Labels().Set("chainids", string(ids))
 
 		// Remove local copies so that the following pulls fetch from the registry
-		// (tolerate refs that are already gone)
-		helpers.Anyhow("rmi", "-f", esgz)
-		helpers.Anyhow("rmi", "-f", invalid)
+		helpers.Ensure("rmi", "-f", esgz, invalid)
 
 		data.Labels().Set("esgz", esgz)
 		data.Labels().Set("invalid", invalid)
@@ -292,16 +202,7 @@ func TestPullStargzInvalidChainID(t *testing.T) {
 	}
 
 	testCase.Command = func(data test.Data, helpers test.Helpers) test.TestableCommand {
-		client := newTestContainerdClient(helpers)
-		defer client.Close()
-		ctx := context.Background()
-		var chainIDs []digest.Digest
-		assert.NilError(helpers.T(), json.Unmarshal([]byte(data.Labels().Get("chainids")), &chainIDs))
-		dumpStargzSnapshots(ctx, helpers.T(), client, "before the first pull", chainIDs)
 		helpers.Ensure("--snapshotter=stargz", "pull", data.Labels().Get("invalid"))
-		dumpImage(ctx, helpers.T(), client, data.Labels().Get("invalid"))
-		dumpStargzSnapshots(ctx, helpers.T(), client, "after pulling the invalid image", chainIDs)
-		helpers.Ensure("--snapshotter=stargz", "images")
 		return helpers.Command("--snapshotter=stargz", "pull", data.Labels().Get("esgz"))
 	}
 
